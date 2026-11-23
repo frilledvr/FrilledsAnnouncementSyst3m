@@ -219,13 +219,21 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
 #endif
         if (legacyText)
         {
-            legacyText.cachedTextGenerator.Populate(
-                legacyText.text,
-                legacyText.GetGenerationSettings(maxWidth - padding.x)
+            Vector2 generationSize = new Vector2(
+                maxWidth - padding.x,
+                10000f
             );
 
+            legacyText.cachedTextGenerator.Populate(
+                legacyText.text,
+                legacyText.GetGenerationSettings(generationSize)
+            );
+
+            float preferredWidth = legacyText.cachedTextGenerator
+                .GetPreferredWidth(legacyText.text, legacyText.GetGenerationSettings(generationSize));
+
             width = Mathf.Clamp(
-                legacyText.cachedTextGenerator.rectExtents.x + padding.x,
+                preferredWidth + padding.x,
                 minWidth,
                 maxWidth
             );
@@ -253,6 +261,12 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
 
         float start = panelCanvasGroup.alpha;
         float time = 0;
+
+        if (fadeDuration <= 0)
+        {
+            panelCanvasGroup.alpha = target;
+            yield break;
+        }
 
         while (time < fadeDuration)
         {
