@@ -22,6 +22,10 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
     public TMP_Text tmpSenderText;
 #endif
 
+    [Header("Username Prefix")]
+    public bool showUsernamePrefix = true;
+    public string usernameSeparator = ": ";
+
     [Header("Panel Sizing")]
     public Vector2 padding = new Vector2(40, 30);
     public float minWidth = 300;
@@ -45,6 +49,7 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
     private string latest = "";
     private long lastSeenCount = -1;
     private bool firstPoll = true;
+
     private Coroutine typingCoroutine;
     private Coroutine fadeCoroutine;
     private Coroutine hideCoroutine;
@@ -83,24 +88,27 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
                         req.downloadHandler.text
                     );
                 }
-                catch { }
+                catch
+                {
+                    // Ignore invalid response data.
+                }
 
                 if (data != null && data.items != null && data.items.Length > 0)
                 {
-                    var item = data.items[0];
+                    AnnouncementItem item = data.items[0];
 
-                    // Don't replay the most recent announcement when the game starts.
                     if (firstPoll)
                     {
                         lastSeenCount = item.createdAt;
                         latest = item.message;
                         firstPoll = false;
                     }
-                    else if (item.createdAt != lastSeenCount &&
+                    else if (item.createdAt != lastSeenCount ||
                              item.message != latest)
                     {
                         lastSeenCount = item.createdAt;
                         latest = item.message;
+
                         DisplayAnnouncement(item.message, item.sender);
                     }
                 }
@@ -112,7 +120,9 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
 
             req.Dispose();
 
-            yield return new WaitForSeconds(Mathf.Max(2, pollSeconds));
+            yield return new WaitForSeconds(
+                Mathf.Max(2f, pollSeconds)
+            );
         }
     }
 
@@ -130,7 +140,16 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
         if (panel)
             panel.gameObject.SetActive(true);
 
-        SetSender(sender);
+        string safeSender = string.IsNullOrWhiteSpace(sender)
+            ? "Announcement"
+            : sender.Trim();
+
+        string formattedMessage = showUsernamePrefix
+            ? safeSender + usernameSeparator + message
+            : message;
+
+        // Prevent separate sender labels from duplicating the prefix.
+        SetSender("");
 
         if (legacyText)
             legacyText.text = "";
@@ -143,7 +162,9 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
         if (panelCanvasGroup)
             panelCanvasGroup.alpha = 0;
 
-        typingCoroutine = StartCoroutine(TypeMessage(message));
+        typingCoroutine = StartCoroutine(
+            TypeMessage(formattedMessage)
+        );
     }
 
     void SetSender(string sender)
@@ -162,7 +183,7 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
         if (fadeCoroutine != null)
             StopCoroutine(fadeCoroutine);
 
-        fadeCoroutine = StartCoroutine(Fade(1));
+        fadeCoroutine = StartCoroutine(Fade(1f));
 
         string current = "";
 
@@ -180,9 +201,13 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
 
             ResizePanel();
 
-            if (typingSound && typingAudio && !char.IsWhiteSpace(message[i]))
+            if (typingSound && typingAudio &&
+                !char.IsWhiteSpace(message[i]))
             {
-                typingAudio.PlayOneShot(typingSound, typingSoundVolume);
+                typingAudio.PlayOneShot(
+                    typingSound,
+                    typingSoundVolume
+                );
             }
 
             yield return new WaitForSeconds(typingSpeed);
@@ -199,7 +224,7 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
             return;
 
         float width = minWidth;
-        float height = 100;
+        float height = 100f;
 
 #if TMP_PRESENT || TEXTMESHPRO_PRESENT
         if (tmpText)
@@ -209,10 +234,15 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
             Vector2 preferred = tmpText.GetPreferredValues(
                 tmpText.text,
                 maxWidth - padding.x,
-                10000
+                10000f
             );
 
-            width = Mathf.Clamp(preferred.x + padding.x, minWidth, maxWidth);
+            width = Mathf.Clamp(
+                preferred.x + padding.x,
+                minWidth,
+                maxWidth
+            );
+
             height = preferred.y + padding.y;
         }
         else
@@ -229,8 +259,11 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
                 legacyText.GetGenerationSettings(generationSize)
             );
 
-            float preferredWidth = legacyText.cachedTextGenerator
-                .GetPreferredWidth(legacyText.text, legacyText.GetGenerationSettings(generationSize));
+            float preferredWidth =
+                legacyText.cachedTextGenerator.GetPreferredWidth(
+                    legacyText.text,
+                    legacyText.GetGenerationSettings(generationSize)
+                );
 
             width = Mathf.Clamp(
                 preferredWidth + padding.x,
@@ -248,7 +281,7 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
     {
         yield return new WaitForSeconds(displaySeconds);
 
-        yield return Fade(0);
+        yield return Fade(0f);
 
         if (panel)
             panel.gameObject.SetActive(false);
@@ -260,9 +293,9 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
             yield break;
 
         float start = panelCanvasGroup.alpha;
-        float time = 0;
+        float time = 0f;
 
-        if (fadeDuration <= 0)
+        if (fadeDuration <= 0f)
         {
             panelCanvasGroup.alpha = target;
             yield break;
