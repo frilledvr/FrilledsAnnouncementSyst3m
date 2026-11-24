@@ -134,11 +134,12 @@ public class FrilledsAnnouncementSystemUI : MonoBehaviour
                 try { data = JsonUtility.FromJson<PollResponse>(req.downloadHandler.text); } catch { }
                 if (data != null && data.poll != null)
                 {
+                    if (pollText && !pollText.gameObject.activeSelf) pollText.gameObject.SetActive(true);
                     if (activePollId != data.poll.id) { activePollId = data.poll.id; votedPoll = false; }
                     if (pollText) pollText.text = "POLL: " + data.poll.question + "\nPush LEFT + click left joystick to vote for: " + data.poll.options[0] + "\n" + data.poll.options[1] + "\nVotes: " + data.poll.votes[0] + " / " + data.poll.votes[1];
                     CheckPollInput(data.poll);
                 }
-                else { if (pollText) pollText.text = ""; activePollId = ""; votedPoll = false; }
+                else { if (pollText) { pollText.text = ""; if (pollText.gameObject.activeSelf) pollText.gameObject.SetActive(false); } activePollId = ""; votedPoll = false; }
             }
             req.Dispose();
             yield return new WaitForSeconds(Mathf.Max(2f, pollRefreshSeconds));
